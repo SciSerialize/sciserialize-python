@@ -160,7 +160,7 @@ if __name__ == '__main__':
            randn(3,9),
            np.matrix(randn(2,3)),
            pd.DataFrame(randn(2,3))]
-    js = SciJSONEncoder().encode(input)
+    js = SciJSONEncoder().encode(input_)
     decoded = SciJSONDecoder().decode(js)
 
     print(input_)
