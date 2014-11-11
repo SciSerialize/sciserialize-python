@@ -22,11 +22,12 @@ the native python object.
 
 In the JSON domain a type defined by this module will allways be inside a
 JSON-Object with following schema:
-
+```
 {__type__: ['typename', [<serialized data>]]}
-
+```
 Example
--------
+---------
+``` python
 In [1026]: data = np.random.randn(2, 2)
 
 In [1027]: s = SciJSONEncoder().encode(data)
@@ -43,7 +44,7 @@ In [1033]: decoded == data
 Out[1033]:
 array([[ True,  True],
        [ True,  True]], dtype=bool)
-
+```
 
 Notes
 -----

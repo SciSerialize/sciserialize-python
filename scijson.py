@@ -30,6 +30,7 @@ JSON-Object with following schema:
 
 Example
 -------
+``` Python
 In [1026]: data = np.random.randn(2, 2)
 
 In [1027]: s = SciJSONEncoder().encode(data)
@@ -46,7 +47,7 @@ In [1033]: decoded == data
 Out[1033]:
 array([[ True,  True],
        [ True,  True]], dtype=bool)
-
+```
 
 Notes
 -----
