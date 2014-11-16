@@ -14,18 +14,19 @@ TYPE_KEY = '~_type_~'
 PYPICKLE_KEY = 'pypickle'
 
 
-# first we neet type coders to convert types to _jsonable objects and backwards:
+# first we need type coders to convert types to jsonable objects and backwards:
 # these definitions could be outsourced to coders.py and finally the
 # TYPE_CODER_LIST could be generated automaticaly by appending all abjects
 # with the attributes type_, typestr, encode, decode.
 
-class DateTimeCoder:
+class DateTimeIsoStringCoder:
     from datetime import datetime
     import dateutil.parser
     type_ = datetime
     typestr = 'datetime'
     def encode(self, obj):
-        return {'isostr': datetime.isoformat(obj)}
+        return {TYPE_KEY: self.typestr,
+                'isostr': datetime.isoformat(obj)}
     def decode(self, data):
         return self.dateutil.parser.parse(data['isostr'])
 
@@ -34,7 +35,8 @@ class TimeDeltaCoder:
     type_ = timedelta
     typestr = 'timedelta'
     def encode(self, obj):
-        return {'days': obj.days,
+        return {TYPE_KEY: self.typestr,
+                'days': obj.days,
                 'seconds': obj.seconds,
                 'microsec': obj.microseconds}
     def decode(self, data):
@@ -43,19 +45,35 @@ class TimeDeltaCoder:
 class NumpyArrayCoder:
     #TODO: correct binary serialization
     # i was a bit confused whats the right way to do
-    from numpy import ndarray, frombuffer
+    from numpy import ndarray, frombuffer, array
     type_ = ndarray
     typestr = 'ndarray'
     def encode(self, obj):
-        return {'dtype': str(obj.dtype),
-                'shape': list(obj.shape),
-                'bytes': bytearray(obj.data)}
+        if obj.dtype==object:
+            data = encode_types(obj.tolist())
+        else:
+            data = bytearray(obj.data)
+        return {TYPE_KEY: self.typestr,
+                'dtype': str(obj.dtype),
+                'shape': [int(sh) for sh in obj.shape],
+                'data': data}
     def decode(self, data):
-        return self.frombuffer(data['bytes'], dtype=data['dtype'])
+        if data['dtype'] == 'object':
+            return self.array(decode_types(data['data']),
+                              dtype=data['dtype']).reshape(data['shape'])
+        else:
+            return self.frombuffer(data['data'], dtype=data['dtype'])
+
+#class NumpyLongCoder:
+#    from numpy import long
+#    type_ = long
+#    typestr = 'longint'
+
+
 
 # second we need the coder insatnces as a list:
 TYPE_CODER_LIST = [
-    DateTimeCoder(),
+    DateTimeIsoStringCoder(),
     TimeDeltaCoder(),
     NumpyArrayCoder(),
 ]
@@ -75,18 +93,18 @@ def encode_types(data,
             out = list(data)
             for index in range(len(out)):
                 out[index] = _recursive_encoder(data[index])
+        elif isinstance(data, (str, int, float, long)):
+            return data
         else:
             for coder in type_coder_list:
                 if isinstance(data, coder.type_):
-                    out = {type_key: coder.typestr}
-                    out.update(coder.encode(data))
-                    return out
+                    return coder.encode(data)
             if enable_pickle:
                 out = {type_key: PYPICKLE_KEY,
                        'b': bytearray(_pickle.dumps(data))}
             else:
-                raise(ValueError('Type {} is not supported. '.format(
-                    type(data)) + 'Enable pickle or implement a TypeCoder.'))
+                raise(ValueError('Type {}  with value {} is not supported. '.format(
+                    type(data), data) + 'Enable pickle or implement a TypeCoder.'))
         return out
     return _recursive_encoder(data)
 
@@ -102,7 +120,7 @@ def decode_types(data,
             typestr = data.pop(type_key)
             if typestr in supported_typestr_list:
                 index = supported_typestr_list.index(typestr)
-                return type_coder_list[index].decode(data)
+                return _recursive_decoder(type_coder_list[index].decode(data))
             elif enable_pickle and typestr==PYPICKLE_KEY:
                 out = _pickle.loads(data['b'])
             else:
@@ -190,10 +208,12 @@ if __name__ == '__main__':
 
     from datetime import datetime
     import numpy as np
-
+    import pandas as pd
     # small test:
     # define some data:
-    data = [[datetime.today()], datetime.today()- datetime.today(), np.random.randn(3), {'Hallo'}]
+    dp = pd.date_range(start='2014-08-22 10:30:45.1234',
+                       end='2028-08-30 20:40', tz='UTC').to_pydatetime()
+    data = [dp, [datetime.today()], datetime.today()- datetime.today(), np.random.randn(3000), {'Hallo'}]
 
     # encoder and decoder:
     out = encode_types(data, TYPE_CODER_LIST, enable_pickle=True)
