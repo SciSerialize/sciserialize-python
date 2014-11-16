@@ -31,6 +31,48 @@ A serialied example:
  "isostr": "2014-12-24T05:55:55.555+00"}
 ```
 
+Example
+-----
+```python
+from datetime import datetime
+import numpy as np
+data = [[datetime.today()], datetime.today()- datetime.today(), np.random.randn(3), {'Hallo'}]
+out = encode_types(data, TYPE_CODER_LIST, enable_pickle=True)
+res = decode_types(out, TYPE_CODER_LIST, enable_pickle=True)
+    
+out_msgpack = msgpack.packb(out, encoding='utf-8', use_bin_type=True)
+res_msgpack = decode_types(msgpack.unpackb(out_msgpack, encoding='utf-8'), enable_pickle=True)
+for d, r in zip(data, res_msgpack): print(d==r)
+
+True
+True
+[ True  True  True]
+True
+
+In [454]: data
+Out[454]: 
+[[datetime.datetime(2014, 11, 16, 19, 28, 12, 93000)],
+ datetime.timedelta(0),
+ array([-0.56142362, -0.39822492,  1.17505221]),
+ set(['Hallo'])]
+
+In [455]: out
+Out[455]: 
+[[{'isostr': '2014-11-16T19:28:12.093000', '~_type_~': 'datetime'}],
+ {'days': 0, 'microsec': 0, 'seconds': 0, '~_type_~': 'timedelta'},
+ {'dtype': 'float64',
+  'shape': [3L],
+  'valuebytes': '\xd1[\xe9\xaa.\xf7\xe1\xbf{\xb6\x86`\x84|\xd9\xbf\xe7\xbcM\x8c\x03\xcd\xf2?',
+  '~_type_~': 'ndarray'},
+ {'s': "c__builtin__\nset\np0\n((lp1\nS'Hallo'\np2\natp3\nRp4\n.",
+  '~_type_~': 'pypickle'}]
+
+"\x94\x91\x82\xc4\x06isostr\xc4\x1a2014-11-16T19:28:12.093000\xc4\x08~_type_~\xc4\x08datetime\x84\xc4\x07seconds\x00\xc4\x08microsec\x00\xc4\x04days\x00\xc4\x08~_type_~\xc4\ttimedelta\x84\xc4\x05dtype\xc4\x07float64\xc4\x05shape\x91\x03\xc4\nvaluebytes\xc4\x18\xd1[\xe9\xaa.\xf7\xe1\xbf{\xb6\x86`\x84|\xd9\xbf\xe7\xbcM\x8c\x03\xcd\xf2?\xc4\x08~_type_~\xc4\x07ndarray\x82\xc4\x01s\xc40c__builtin__\nset\np0\n((lp1\nS'Hallo'\np2\natp3\nRp4\n.\xc4\x08~_type_~\xc4\x08pypickle"
+
+```
+
+As you can see, strings are strings in  out_msgpack. If you only would like to use msgpack, there is support to add extensions to it. Then you could define a much shorter identifier. So there is potential for improovement on the idea. But one goal until now is to support both json AND msgpack and only defining the coders once. Mabe have a look at transits way and how they do it.
+
 Notes
 -----
 Be aware of floating point precision in JSON, if you need exactly the same bytes
