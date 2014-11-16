@@ -36,6 +36,8 @@ class TimeDeltaCoder:
         return timedelta(data['days'], data['seconds'], data['microsec'])
 
 class NumpyArrayCoder:
+    #TODO: correct binary serialization
+    # i was a bit confused whats the right way to do
     from numpy import ndarray, frombuffer
     type_ = ndarray
     typestr = 'ndarray'
@@ -53,11 +55,10 @@ TYPE_CODER_LIST = [
     NumpyArrayCoder(),
 ]
 
-# third we need routines to encode and decode the types to jsonable objects:
+# third we need routines to encode and decode the types to msgpackable objects:
 def encode_types(data,
                  type_coder_list=TYPE_CODER_LIST,
                  enable_pickle=False,
-                 pass_unknown_obj=True,
                  type_key=TYPE_KEY):
     """Recursive type encoder"""
     def _recursive_encoder(data):
@@ -78,8 +79,6 @@ def encode_types(data,
             if enable_pickle:
                 out = {type_key: PYPICKLE_KEY}
                 out.update({'s': pickle.dumps(data)})
-            elif pass_unknown_obj:
-                out = data
             else:
                 raise(ValueError('Type {} is not supported.' +
                     'Enable pickle or implement a TypeCoder.'.format(
@@ -91,6 +90,7 @@ def decode_types(data,
                  type_coder_list=TYPE_CODER_LIST,
                  enable_pickle=False,
                  type_key=TYPE_KEY):
+    """Recursive type decoder."""
     supported_typestr_list = [o.typestr for o in type_coder_list]
     def _recursive_decoder(data):
         if isinstance(data, dict) and type_key in data:
@@ -119,14 +119,15 @@ def decode_types(data,
     return _recursive_decoder(data)
 
 
-
 # small test
 data = [[datetime.today()], datetime.today()- datetime.today(), np.random.randn(3), {'Hallo'}]
-out = encode_types(data, TYPE_CODER_LIST, enable_pickle=True, pass_unknown_obj=False)
+out = encode_types(data, TYPE_CODER_LIST, enable_pickle=True)
 res = decode_types(out, TYPE_CODER_LIST, enable_pickle=True)
 
 out_msgpack = msgpack.packb(out)
 res_msgpack = decode_types(msgpack.unpackb(out_msgpack), enable_pickle=True)
+for d, r in zip(data, res_msgpack): print(d==r)
 
+# TODO: for json we need a ste between to convert binary data to base64 strings...
 #out_json = json.dumps(out)
 #res_json = json.loads(out_json)
