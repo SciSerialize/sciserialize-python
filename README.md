@@ -1,54 +1,39 @@
-SciJSON serialize common scientific data types to json and back to original data types
+A format for serializing scientific data
 ===========
 
 An initial python implementation -- in dev status.
 
-This module implements a JSON encoder and decoder supporting addittional
-types often used in scientific computations or engineering.
-So it can be used to serialize data to JSON files for example.
-All supported types can be serialized to valid JSON and can be
-deserialized to the original types in python.
+This module implements type encoders an decoders to be used with msgpack and json to serialize data-types often used in scientific computations or engineering.
+So it can be used to serialize data to MessagePack or JSON files for example.
+All supported types can be serialized and can be
+deserialized to the original types in python. If a type is not supported, the option for enabling
+pickle is given. But this pickle option is for python internal use only.
 
-The main goals of this module are to provide easy extensability, to
-keep human readability and to be elegant as possible:
-For supporting a scustom type, only a tuple with some definitions must
-be appended to the `TYPE_CODER_LIST`.
-Such a tuple contains definitions for the serialization to valid JSON types
-and for deserialziation to the origin types. For serialization, the tuple contains
-the type identifier of the python type followed by a function that, converts the
-python object to valid JSON types. The subsequent field is the type identifier in
-the JSON domain. The last field contains the deserialization function, returning
-the native python object.
-
-In the JSON domain a type defined by this module will allways be inside a
-JSON-Object with following schema:
+The main goals of this module are to provide easy extensability, to be verbose and to be elegant as possible:
+For supporting a custom type, only a class with the attributes `type_`, `typestr`, `encode` and `decode` must be implemented and an instance can be added to the `TYPE_CODER_LIST`.
+Example of a coder to support serialization of propper datetime with timezone:
+```python
+class DateTimeCoder:
+    from datetime import datetime  # import the type
+    import dateutil.parser  # import the parser for decoding
+    type_ = datetime  # defining the type in program domain
+    typestr = 'datetime'  # defining the type in the serialized domain
+    def encode(self, obj):  # function to encode serializable object
+        return {'isostr': datetime.isoformat(obj)}
+    def decode(self, data):  # function to decode serialized object to origin types
+        return self.dateutil.parser.parse(data['isostr'])
 ```
-{__type__: ['typename', [<serialized data>]]}
+
+A serialied example:
+
 ```
-Example
----------
-``` python
-In [1026]: data = np.random.randn(2, 2)
-
-In [1027]: s = SciJSONEncoder().encode(data)
-In [1028]: s
-Out[1028]: '{"__type__": ["ndarray", ["float64", [2, 2],
-[-0.6035334921252804, -0.9812241692131949, -0.41874824665336285, -1.8832546212025774]]]}'
-In [1029]: decoded = SciJSONDecoder().decode(s)
-In [1030]: decoded
-Out[1032]:
-array([[-0.60353349, -0.98122417],
-       [-0.41874825, -1.88325462]])
-
-In [1033]: decoded == data
-Out[1033]:
-array([[ True,  True],
-       [ True,  True]], dtype=bool)
+{"~_type_~": "datetime",
+ "isostr": "2014-12-24T05:55:55.555+00"}
 ```
 
 Notes
 -----
-Be aware of floating point precision in JSON, if jou need exactly the same bytes
+Be aware of floating point precision in JSON, if you need exactly the same bytes
 as jour original object, this could be a problem!
 
 TODO:
