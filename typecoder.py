@@ -123,17 +123,31 @@ def decode_types(data,
     return _recursive_decoder(data)
 
 
-# small test
-from datetime import datetime
-import numpy as np
-data = [[datetime.today()], datetime.today()- datetime.today(), np.random.randn(3), {'Hallo'}]
-out = encode_types(data, TYPE_CODER_LIST, enable_pickle=True)
-res = decode_types(out, TYPE_CODER_LIST, enable_pickle=True)
+if __name__ == '__main__':
 
-out_msgpack = msgpack.packb(out, encoding='utf-8', use_bin_type=True)
-res_msgpack = decode_types(msgpack.unpackb(out_msgpack, encoding='utf-8'), enable_pickle=True)
-for d, r in zip(data, res_msgpack): print(d==r)
+    # small test
+    from datetime import datetime
+    import numpy as np
+    data = [[datetime.today()], datetime.today()- datetime.today(), np.random.randn(3), {'Hallo'}]
+    out = encode_types(data, TYPE_CODER_LIST, enable_pickle=True)
+    res = decode_types(out, TYPE_CODER_LIST, enable_pickle=True)
 
-# TODO: for json we need a ste between to convert binary data to base64 strings...
-#out_json = json.dumps(out)
-#res_json = json.loads(out_json)
+    out_msgpack = msgpack.packb(out, encoding='utf-8', use_bin_type=True)
+    res_msgpack = decode_types(msgpack.unpackb(out_msgpack, encoding='utf-8'), enable_pickle=True)
+    for d, r in zip(data, res_msgpack): print(d==r)
+
+    # TODO: for json we need a ste between to convert binary data to base64 strings...
+    import base64
+    def default(obj):
+        if isinstance(obj, bytes):
+            return {'~#base64': base64.encodebytes(obj).decode()}
+
+    out_json = json.dumps(out, default=default)
+
+    def obj_hook(data):
+        if (isinstance(data, dict) and
+            len(data.keys())==1 and '~#base64' in data.keys()):
+            return base64.decodebytes(data['~#base64'].encode())
+        else:
+            return data
+    res_json = decode_types(json.loads(out_json, object_hook = obj_hook), enable_pickle=True)
