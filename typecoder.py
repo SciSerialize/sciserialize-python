@@ -14,6 +14,10 @@ PYPICKLE_KEY = 'pypickle'
 
 
 # first we neet type coders to convert types to jsonable objects and backwards:
+# these definitions could be outsourced to coders.py and finally the
+# TYPE_CODER_LIST could be generated automaticaly by appending all abjects
+# with the attributes type_, typestr, encode, decode.
+
 class DateTimeCoder:
     from datetime import datetime
     import dateutil.parser
@@ -22,7 +26,7 @@ class DateTimeCoder:
     def encode(self, obj):
         return {'isostr': datetime.isoformat(obj)}
     def decode(self, data):
-        return dateutil.parser.parse(data['isostr'])
+        return self.dateutil.parser.parse(data['isostr'])
 
 class TimeDeltaCoder:
     from datetime import timedelta
@@ -33,7 +37,7 @@ class TimeDeltaCoder:
                 'seconds': obj.seconds,
                 'microsec': obj.microseconds}
     def decode(self, data):
-        return timedelta(data['days'], data['seconds'], data['microsec'])
+        return self.timedelta(data['days'], data['seconds'], data['microsec'])
 
 class NumpyArrayCoder:
     #TODO: correct binary serialization
@@ -46,7 +50,7 @@ class NumpyArrayCoder:
                 'shape': list(obj.shape),
                 'valuebytes': bytes(obj.data)}
     def decode(self, data):
-        return frombuffer(data['valuebytes'], dtype=data['dtype'])
+        return self.frombuffer(data['valuebytes'], dtype=data['dtype'])
 
 # second we need the coder insatnces as a list:
 TYPE_CODER_LIST = [
@@ -60,7 +64,7 @@ def encode_types(data,
                  type_coder_list=TYPE_CODER_LIST,
                  enable_pickle=False,
                  type_key=TYPE_KEY):
-    """Recursive type encoder"""
+    """Recursive type encoder."""
     def _recursive_encoder(data):
         if isinstance(data, dict):
             out = {}
@@ -77,8 +81,8 @@ def encode_types(data,
                     out.update(coder.encode(data))
                     return out
             if enable_pickle:
-                out = {type_key: PYPICKLE_KEY}
-                out.update({'s': pickle.dumps(data)})
+                out = {type_key: PYPICKLE_KEY,
+                       's': pickle.dumps(data)}
             else:
                 raise(ValueError('Type {} is not supported.' +
                     'Enable pickle or implement a TypeCoder.'.format(
@@ -97,7 +101,7 @@ def decode_types(data,
             data = data.copy()
             typestr = data.pop(type_key)
             if typestr in supported_typestr_list:
-                index = typestr_list.index(typestr)
+                index = supported_typestr_list.index(typestr)
                 return type_coder_list[index].decode(data)
             elif enable_pickle and typestr==PYPICKLE_KEY:
                 out = pickle.loads(data['s'])
@@ -120,12 +124,14 @@ def decode_types(data,
 
 
 # small test
+from datetime import datetime
+import numpy as np
 data = [[datetime.today()], datetime.today()- datetime.today(), np.random.randn(3), {'Hallo'}]
 out = encode_types(data, TYPE_CODER_LIST, enable_pickle=True)
 res = decode_types(out, TYPE_CODER_LIST, enable_pickle=True)
 
-out_msgpack = msgpack.packb(out)
-res_msgpack = decode_types(msgpack.unpackb(out_msgpack), enable_pickle=True)
+out_msgpack = msgpack.packb(out, encoding='utf-8', use_bin_type=True)
+res_msgpack = decode_types(msgpack.unpackb(out_msgpack, encoding='utf-8'), enable_pickle=True)
 for d, r in zip(data, res_msgpack): print(d==r)
 
 # TODO: for json we need a ste between to convert binary data to base64 strings...
