@@ -1,11 +1,12 @@
 # -- coding: utf-8 --
 
-import pickle
-import json
-import msgpack
+import pickle as _pickle
+import json as _json
+import msgpack as _msgpack
+import base64 as _base64
 
 """This module intends to build a coder system that transforms
-data into JSON- or MessagePack-able data structures.
+data into _JSON- or MessagePack-able data structures.
 
 """
 
@@ -13,7 +14,7 @@ TYPE_KEY = '~_type_~'
 PYPICKLE_KEY = 'pypickle'
 
 
-# first we neet type coders to convert types to jsonable objects and backwards:
+# first we neet type coders to convert types to _jsonable objects and backwards:
 # these definitions could be outsourced to coders.py and finally the
 # TYPE_CODER_LIST could be generated automaticaly by appending all abjects
 # with the attributes type_, typestr, encode, decode.
@@ -48,9 +49,9 @@ class NumpyArrayCoder:
     def encode(self, obj):
         return {'dtype': str(obj.dtype),
                 'shape': list(obj.shape),
-                'valuebytes': bytes(obj.data)}
+                'bytes': bytearray(obj.data)}
     def decode(self, data):
-        return self.frombuffer(data['valuebytes'], dtype=data['dtype'])
+        return self.frombuffer(data['bytes'], dtype=data['dtype'])
 
 # second we need the coder insatnces as a list:
 TYPE_CODER_LIST = [
@@ -59,7 +60,7 @@ TYPE_CODER_LIST = [
     NumpyArrayCoder(),
 ]
 
-# third we need routines to encode and decode the types to msgpackable objects:
+# third we need routines to encode and decode the types to _msgpackable objects:
 def encode_types(data,
                  type_coder_list=TYPE_CODER_LIST,
                  enable_pickle=False,
@@ -82,11 +83,10 @@ def encode_types(data,
                     return out
             if enable_pickle:
                 out = {type_key: PYPICKLE_KEY,
-                       's': pickle.dumps(data)}
+                       'b': bytearray(_pickle.dumps(data))}
             else:
-                raise(ValueError('Type {} is not supported.' +
-                    'Enable pickle or implement a TypeCoder.'.format(
-                    type(data))))
+                raise(ValueError('Type {} is not supported. '.format(
+                    type(data)) + 'Enable pickle or implement a TypeCoder.'))
         return out
     return _recursive_encoder(data)
 
@@ -104,7 +104,7 @@ def decode_types(data,
                 index = supported_typestr_list.index(typestr)
                 return type_coder_list[index].decode(data)
             elif enable_pickle and typestr==PYPICKLE_KEY:
-                out = pickle.loads(data['s'])
+                out = _pickle.loads(data['b'])
             else:
                 out = _recursive_decoder(data)
                 out[type_key] = typestr
@@ -122,32 +122,88 @@ def decode_types(data,
         return out
     return _recursive_decoder(data)
 
+def dumps(obj,
+          type_coder_list=TYPE_CODER_LIST,
+          enable_pickle=False,
+          type_key=TYPE_KEY,
+          default=None,
+          **kwargs):
+    """Returns JSON string. Types encoded."""
+    def default_json(obj):
+        if isinstance(obj, bytearray):
+            return {'~#base64': _base64.b64encode(obj).decode()}
+        elif default:
+            return default(obj)
+        return obj
+    return _json.dumps(encode_types(obj, type_coder_list, enable_pickle, type_key),
+                       default=default_json, **kwargs)
 
-if __name__ == '__main__':
-
-    # small test
-    from datetime import datetime
-    import numpy as np
-    data = [[datetime.today()], datetime.today()- datetime.today(), np.random.randn(3), {'Hallo'}]
-    out = encode_types(data, TYPE_CODER_LIST, enable_pickle=True)
-    res = decode_types(out, TYPE_CODER_LIST, enable_pickle=True)
-
-    out_msgpack = msgpack.packb(out, encoding='utf-8', use_bin_type=True)
-    res_msgpack = decode_types(msgpack.unpackb(out_msgpack, encoding='utf-8'), enable_pickle=True)
-    for d, r in zip(data, res_msgpack): print(d==r)
-
-    # TODO: for json we need a ste between to convert binary data to base64 strings...
-    import base64
-    def default(obj):
-        if isinstance(obj, bytes):
-            return {'~#base64': base64.encodebytes(obj).decode()}
-
-    out_json = json.dumps(out, default=default)
-
+def loads(data,
+          type_coder_list=TYPE_CODER_LIST,
+          enable_pickle=False,
+          type_key=TYPE_KEY,
+          **kwargs):
+    """Returns data deserialized from JSON string. Types decoded."""
     def obj_hook(data):
         if (isinstance(data, dict) and
             len(data.keys())==1 and '~#base64' in data.keys()):
-            return base64.decodebytes(data['~#base64'].encode())
-        else:
-            return data
-    res_json = decode_types(json.loads(out_json, object_hook = obj_hook), enable_pickle=True)
+            return _base64.b64decode(data['~#base64'].encode())
+        return data
+
+    return decode_types(
+        _json.loads(data, object_hook=obj_hook),
+        type_coder_list, enable_pickle, type_key)
+
+def packb(obj,
+          type_coder_list=TYPE_CODER_LIST,
+          enable_pickle=False,
+          type_key=TYPE_KEY,
+          default=None,
+          encoding='utf-8',
+          use_bin_type=True,
+          **kwargs):
+    """Returns MessagePack packed data. Types encoded."""
+    def default_msgpack(obj):
+        if isinstance(obj, bytearray):
+            return bytes(obj)
+        elif default:
+            return default(obj)
+        return obj
+    return _msgpack.packb(
+        encode_types(obj, type_coder_list, enable_pickle, type_key),
+        encoding=encoding, use_bin_type=use_bin_type, default=default_msgpack,
+        **kwargs)
+
+def unpackb(obj,
+            type_coder_list=TYPE_CODER_LIST,
+            enable_pickle=False,
+            type_key=TYPE_KEY,
+            encoding='utf-8',
+            **kwargs):
+    """Returns unpacked messagepack data with types decoded."""
+    return decode_types(
+        _msgpack.unpackb(out_msgpack, encoding=encoding),
+        type_coder_list, enable_pickle, type_key)
+
+
+if __name__ == '__main__':
+
+    from datetime import datetime
+    import numpy as np
+
+    # small test:
+    # define some data:
+    data = [[datetime.today()], datetime.today()- datetime.today(), np.random.randn(3), {'Hallo'}]
+
+    # encoder and decoder:
+    out = encode_types(data, TYPE_CODER_LIST, enable_pickle=True)
+    res = decode_types(out, TYPE_CODER_LIST, enable_pickle=True)
+
+    # msgpack functions:
+    out_msgpack = packb(data, enable_pickle=True)
+    res_msgpack = unpackb(out_msgpack, enable_pickle=True)
+    for d, r in zip(data, res_msgpack): print(d==r)
+
+    # json functions:
+    out_json = dumps(data, enable_pickle=True)
+    res_json = loads(out_json, enable_pickle=True)
