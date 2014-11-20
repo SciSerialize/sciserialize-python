@@ -1,3 +1,11 @@
+# -- encoding: utf-8 --
+import coders
+import serializers
+from serializers import dumps, loads, packb, unpackb
+
+
+"""
+
 SciSerialize
 ============
 A format for serializing scientific data.
@@ -82,3 +90,8 @@ In MessagePAck this is not a problem.
 TODO:
 Check out further data types to be implemented.
 
+"""
+
+
+__all__ = ['dumps', 'loads', 'packb', 'unpackb', 'coders']
+__version__ = '0.0dev'
