@@ -97,7 +97,7 @@ def encode_types(data,
             out = list(data)
             for index in range(len(out)):
                 out[index] = _recursive_encoder(data[index])
-        elif isinstance(data, (str, int, float, long)):
+        elif isinstance(data, (str, int, float)):
             return data
         else:
             for coder in type_coder_list:
