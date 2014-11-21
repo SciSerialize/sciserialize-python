@@ -1,9 +1,4 @@
 # -- encoding: utf-8 --
-import coders
-import serializers
-from serializers import dumps, loads, packb, unpackb
-
-
 """
 
 SciSerialize
@@ -91,6 +86,10 @@ TODO:
 Check out further data types to be implemented.
 
 """
+
+import sciserialize.coders as coders
+import sciserialize.serializers as serializers
+from sciserialize.serializers import dumps, loads, packb, unpackb
 
 
 __all__ = ['dumps', 'loads', 'packb', 'unpackb', 'coders']
