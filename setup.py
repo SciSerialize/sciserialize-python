@@ -9,7 +9,13 @@ setup(name='SciSerialize',
       author_email='siegfried.guendert@googlemail.com',
       url='https://github.com/SiggiGue/SciSerialize',
       license='MIT',
-      keywords='scientific serialize json msgpack',
+      keywords='scientific serialize data exchange json msgpack',
       packages=find_packages(exclude=('docs',)),
       install_requires=['msgpack-python'],
+      classifiers=[
+          'Development Status :: 3 - Alpha',
+          'Intended Audience :: Science/Research',
+          'Intended Audience :: Developers',
+          'License :: OSI Approved :: MIT License',
+      ]
 )
