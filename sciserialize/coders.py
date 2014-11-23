@@ -63,7 +63,23 @@ class NumpyArrayCoder(TypeCoder):
             return self.array(decode_types(data['bytes']),
                               dtype=data['dtype']).reshape(data['shape'])
         else:
-            return self.frombuffer(data['bytes'], dtype=data['dtype'])
+            return self.frombuffer(data['bytes'],
+                                   dtype=data['dtype']).reshape(data['shape'])
+
+class NumpyMaskedArrayCoder(TypeCoder):
+    from numpy.ma import masked_array
+    from numpy import frombuffer
+    type_ = masked_array
+    typestr = 'maskedarray'
+    ndarray_coder = NumpyArrayCoder()
+    def encode(self, obj):
+        d = self.ndarray_coder.encode(obj)
+        d[TYPE_KEY] = self.typestr
+        d['mask_bytes'] = bytearray(obj.mask.data)
+        return d
+    def decode(self, data):
+        mask = self.frombuffer(data['mask_bytes'], dtype=bool)
+        return self.masked_array(self.ndarray_coder.decode(data), mask)
 
 
 ## Initialize all implemented coder instances into a coder list:
@@ -80,6 +96,10 @@ try:
     TYPE_CODER_LIST.append(NumpyArrayCoder())
 except:
     print('NumpyArrayCoder could not be loaded')
+try:
+    TYPE_CODER_LIST.append(NumpyMaskedArrayCoder())
+except:
+    print('NumpyMaskedArrayCoder could not be loaded')
 
 
 ## Define Type encoders, that uses the coder list to encode and decode the data:
@@ -101,7 +121,8 @@ def encode_types(data,
             return data
         else:
             for coder in type_coder_list:
-                if isinstance(data, coder.type_):
+                # compare explicit to support subclasses:
+                if type(data) == coder.type_:
                     return coder.encode(data)
             if enable_pickle:
                 out = {type_key: PYPICKLE_TYPE_NAME,
