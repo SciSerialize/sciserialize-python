@@ -16,12 +16,12 @@ PYPICKLE_TYPE_NAME = 'pypickle'
 class TypeCoder:
     type_ = None
     typestr = None
-    def verify_type(self, type_):
+    def verify_type(self, obj):
         """Returns a boolean if `type_` ist an instance of `self.type_`.
         If you need a more explicit verification of your type,
         you can reimlement this function.
         """
-        return isinstance(type_, self.type_)
+        return isinstance(obj, self.type_)
     def encode(self, obj):
         pass
     def decode(self, data):
@@ -141,7 +141,7 @@ def encode_types(data,
             return data
         else:
             for coder in type_coder_list:
-                if coder.verify_type(type(data)):
+                if coder.verify_type(data):
                     return coder.encode(data)
             if enable_pickle:
                 out = {type_key: PYPICKLE_TYPE_NAME,
