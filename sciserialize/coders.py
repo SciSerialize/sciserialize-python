@@ -1,8 +1,9 @@
 # -- coding: utf-8 --
+import warnings as _warnings
 import pickle as _pickle
 
 
-TYPE_KEY = '~#type'
+TYPE_KEY = '__type__'
 PYPICKLE_TYPE_NAME = 'pypickle'
 
 
@@ -15,12 +16,27 @@ PYPICKLE_TYPE_NAME = 'pypickle'
 class TypeCoder:
     type_ = None
     typestr = None
+    def verify_type(self, type_):
+        """Returns a boolean if `type_` ist an instance of `self.type_`.
+        If you need a more explicit verification of your type,
+        you can reimlement this function.
+        """
+        return isinstance(type_, self.type_)
     def encode(self, obj):
         pass
     def decode(self, data):
         pass
     def __repr__(self):
         return str(self.__class__)
+
+class SetCoder(TypeCoder):
+    type_ = set
+    typestr = 'unique_set'
+    def encode(self, obj):
+        return {TYPE_KEY: self.typestr,
+                'set': list(obj)}
+    def decode(self, data):
+        return set(data['set'])
 
 class DateTimeIsoStringCoder(TypeCoder):
     from datetime import datetime
@@ -85,21 +101,25 @@ class NumpyMaskedArrayCoder(TypeCoder):
 ## Initialize all implemented coder instances into a coder list:
 TYPE_CODER_LIST = []
 try:
+    TYPE_CODER_LIST.append(SetCoder())
+except:
+    _warnings.warn('SetCoder could not be loaded')
+try:
     TYPE_CODER_LIST.append(DateTimeIsoStringCoder())
 except:
-    print('DateTimeIsoStrinCoder could not be loaded')
+    _warnings.warn('DateTimeIsoStrinCoder could not be loaded')
 try:
     TYPE_CODER_LIST.append(TimeDeltaCoder())
 except:
-    print('TimeDeltaCoder could not be loaded')
+    _warnings.warn('TimeDeltaCoder could not be loaded')
 try:
     TYPE_CODER_LIST.append(NumpyArrayCoder())
 except:
-    print('NumpyArrayCoder could not be loaded')
+    _warnings.warn('NumpyArrayCoder could not be loaded')
 try:
     TYPE_CODER_LIST.append(NumpyMaskedArrayCoder())
 except:
-    print('NumpyMaskedArrayCoder could not be loaded')
+    _warnings.warn('NumpyMaskedArrayCoder could not be loaded')
 
 
 ## Define Type encoders, that uses the coder list to encode and decode the data:
@@ -121,8 +141,7 @@ def encode_types(data,
             return data
         else:
             for coder in type_coder_list:
-                # compare explicit to support subclasses:
-                if type(data) == coder.type_:
+                if coder.verify_type(type(data)):
                     return coder.encode(data)
             if enable_pickle:
                 out = {type_key: PYPICKLE_TYPE_NAME,
