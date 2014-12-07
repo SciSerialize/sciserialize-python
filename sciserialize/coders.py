@@ -107,7 +107,7 @@ except:
 try:
     TYPE_CODER_LIST.append(DateTimeIsoStringCoder())
 except:
-    _warnings.warn('DateTimeIsoStrinCoder could not be loaded')
+    _warnings.warn('DateTimeIsoStringCoder could not be loaded')
 try:
     TYPE_CODER_LIST.append(TimeDeltaCoder())
 except:
