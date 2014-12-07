@@ -6,7 +6,7 @@ import base64 as _base64
 from .coders import (encode_types, decode_types, TYPE_CODER_LIST, TYPE_KEY)
 
 
-BASE64_KEY = '~#base64'
+BASE64_KEY = '__base64__'
 ENABLE_PICKLE = False
 
 def dumps(obj,
