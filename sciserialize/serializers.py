@@ -9,6 +9,7 @@ from .coders import (encode_types, decode_types, TYPE_CODER_LIST, TYPE_KEY)
 BASE64_KEY = '__base64__'
 ENABLE_PICKLE = False
 
+
 def dumps(obj,
           enable_pickle=ENABLE_PICKLE,
           type_coder_list=TYPE_CODER_LIST,
@@ -22,10 +23,13 @@ def dumps(obj,
         elif default:
             return default(obj)
         return obj
-    return _json.dumps(encode_types(obj, type_coder_list, enable_pickle, type_key),
-                       default=default_json, **kwargs)
+    return _json.dumps(encode_types(
+        obj, type_coder_list, enable_pickle, type_key),
+        default=default_json, **kwargs)
+
 dumps.__doc__ = ''.join((dumps.__doc__, '\n\nJSON-Doc:\n',
-                        _json.dumps.__doc__))
+                         _json.dumps.__doc__))
+
 
 def loads(data,
           enable_pickle=ENABLE_PICKLE,
@@ -35,14 +39,16 @@ def loads(data,
     """Returns data deserialized from JSON string. Types decoded."""
     def obj_hook(data):
         if (isinstance(data, dict) and
-            len(data.keys())==1 and BASE64_KEY in data.keys()):
+                len(data.keys()) == 1 and BASE64_KEY in data.keys()):
             return _base64.b64decode(data[BASE64_KEY].encode())
         return data
     return decode_types(
         _json.loads(data, object_hook=obj_hook),
         type_coder_list, enable_pickle, type_key)
+
 loads.__doc__ = ''.join((loads.__doc__, '\n\nJSON-Doc:\n',
-                        _json.loads.__doc__))
+                         _json.loads.__doc__))
+
 
 def packb(obj,
           enable_pickle=ENABLE_PICKLE,
@@ -63,8 +69,10 @@ def packb(obj,
         encode_types(obj, type_coder_list, enable_pickle, type_key),
         encoding=encoding, use_bin_type=use_bin_type, default=default_msgpack,
         **kwargs)
+
 packb.__doc__ = ''.join((packb.__doc__, '\n\nMesssagePack-Doc:\n',
-                        _msgpack.packb.__doc__))
+                         _msgpack.packb.__doc__))
+
 
 def unpackb(obj,
             enable_pickle=ENABLE_PICKLE,
@@ -76,5 +84,6 @@ def unpackb(obj,
     return decode_types(
         _msgpack.unpackb(obj, encoding=encoding),
         type_coder_list, enable_pickle, type_key)
+
 unpackb.__doc__ = ''.join((unpackb.__doc__, '\n\nMesssagePack-Doc:\n',
-                        _msgpack.unpackb.__doc__))
+                           _msgpack.unpackb.__doc__))
