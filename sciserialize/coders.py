@@ -7,27 +7,41 @@ TYPE_KEY = '__type__'
 PYPICKLE_TYPE_NAME = 'pypickle'
 
 
-# Define type coder classes that allows to encode and decode
+# Define type coders that allow to encode and decode
 # specific data types:
-# bytes must be encoded as bytearrays so the serializers can
+# Every coder is built as a class inherited from the following
+# `TypeCoder` base class. As example hav a look at the easiest coder;
+# the `SetCoder` class. After the definition of all coder classes,
+# they are appended into the `TYPE_CODER_LIST` used by the `encode_types()`
+# and `decode_types()` functions.
+
+# If you need to serialize types as bytes, they are handled
+# differently by msgpack and json.
+# They should encoded as bytes and the serializers can
 # convert them to the binary representation in the serialization format.
-# (for instance JSON has no binary type so bytearrays need to be converted
+# (For instance JSON has no binary type so bytes need to be converted
 # to base64 strings)
+
 class TypeCoder:
-    type_ = None
-    typestr = None
+    type_ = None  # This is the  datatype of the environment
+    typestr = None  # This is the identification string in serialized data
 
     def verify_type(self, obj):
         """Returns a boolean if `type_` ist an instance of `self.type_`.
         If you need a more explicit verification of your type,
-        you can reimlement this function.
+        you can reimplement this function.
         """
         return isinstance(obj, self.type_)
 
     def encode(self, obj):
+        # The encoder method converts the data type of the environment into
+        # the serialized representation, that can be handled by json and
+        # message-pack.
         pass
 
     def decode(self, data):
+        # The decoder method converts the loaded/unpacked data into the
+        # environment specific data type.
         pass
 
     def __repr__(self):
@@ -117,7 +131,29 @@ class NumpyMaskedArrayCoder(TypeCoder):
         return self.masked_array(self.ndarray_coder.decode(data), mask)
 
 
+class DataFrameCoder(TypeCoder):
+    from pandas import DataFrame
+    type_ = type(DataFrame())
+    typestr = 'dataframe'
+    ndarray_coder = NumpyArrayCoder()
+
+    def encode(self, obj):
+        d = self.ndarray_coder.encode(obj.values)
+        d[TYPE_KEY] = self.typestr
+        d['columns'] = obj.columns.to_native_types()
+        d['rows'] = obj.index.to_native_types()
+        return d
+
+    def decode(self, data):
+        columns = decode_types(data['columns'])
+        rows = decode_types(data['rows'])
+        values = self.ndarray_coder.decode(data)
+        return self.DataFrame(values, index=rows, columns=columns)
+
+
 # Initialize all implemented coder instances into a coder list:
+# Subclassed types must be last. The list will be iterated from
+# last index.
 TYPE_CODER_LIST = []
 try:
     TYPE_CODER_LIST.append(SetCoder())
@@ -139,9 +175,17 @@ try:
     TYPE_CODER_LIST.append(NumpyMaskedArrayCoder())
 except:
     _warnings.warn('NumpyMaskedArrayCoder could not be loaded')
+try:
+    TYPE_CODER_LIST.append(DataFrameCoder())
+except:
+    _warnings.warn('DataFrameCoder could not be loaded')
 
 
-## Define Type encoders, that uses the coder list to encode and decode the data:
+TYPE_CODER_LIST.reverse()
+
+
+# Define Type coders, that uses the coder list to
+# encode and decode the data:
 def encode_types(data,
                  type_coder_list=TYPE_CODER_LIST,
                  enable_pickle=False,
