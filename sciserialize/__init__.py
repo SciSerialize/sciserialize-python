@@ -53,11 +53,19 @@ import numpy as np
 import sciserialize as scs
 
 
-data = [[datetime.today()], datetime.today()- datetime.today(), np.random.randn(3), {'Hallo'}]
+data = [[datetime.today()],
+         datetime.today()- datetime.today(),
+         np.random.randn(3), {'Hallo'}]
 
 packed = scs.packb(data, enable_pickle=True)
 packed
-Out[33]: "\x94\x91\x82\xc4\x06isostr\xc4\x1a2014-11-20T17:10:07.396000\xc4\x06~#type\xc4\x08datetime\x84\xc4\x07seconds\x00\xc4\x08microsec\x00\xc4\x04days\x00\xc4\x06~#type\xc4\ttimedelta\x84\xc4\x05dtype\xc4\x07float64\xc4\x05shape\x91\x03\xc4\x05bytes\xc4\x18\xe7g\x80 \xb7B\xf3\xbfXGW~\xd9\xef\xf9\xbfQ\xf8zg\n@\xf3\xbf\xc4\x06~#type\xc4\x07ndarray\x82\xc4\x01b\xc40c__builtin__\nset\np0\n((lp1\nS'Hallo'\np2\natp3\nRp4\n.\xc4\x06~#type\xc4\x08pypickle"
+Out[33]: "\x94\x91\x82\xc4\x06isostr\xc4\x1a2014-11-20T17:10:07.396000\xc4
+\x06~#type\xc4\x08datetime\x84\xc4\x07seconds\x00\xc4\x08microsec\x00\xc4
+\x04days\x00\xc4\x06~#type\xc4\ttimedelta\x84\xc4\x05dtype\xc4\x07float64\xc4
+\x05shape\x91\x03\xc4\x05bytes\xc4\x18\xe7g\x80 \xb7B\xf3\xbfXGW~\xd9\xef
+\xf9\xbfQ\xf8zg\n@\xf3\xbf\xc4\x06~#type\xc4\x07ndarray\x82\xc4\x01b
+\xc40c__builtin__\nset\np0\n((lp1\nS'Hallo'\np2\natp3\nRp4\n.\xc4\x06~#type\xc4
+\x08pypickle"
 
 unpacked = scs.unpackb(packed, enable_pickle=True)
 unpacked
@@ -77,8 +85,8 @@ True
 
 Notes
 -----
-Be aware of floating point precision in JSON, if you need exactly the same bytes
-as jour original object, this could be a problem!
+Be aware of floating point precision in JSON, if you need exactly the same
+bytes as jour original object, this could be a problem!
 Just use numpy arrays if you wand to avoid this problem in JSON.
 In MessagePAck this is not a problem.
 
@@ -92,5 +100,5 @@ import sciserialize.serializers as serializers
 from sciserialize.serializers import dumps, loads, packb, unpackb
 
 
-__all__ = ['dumps', 'loads', 'packb', 'unpackb', 'coders']
+__all__ = ['dumps', 'loads', 'packb', 'unpackb', 'coders', 'serializers']
 __version__ = '0.0dev'
