@@ -66,7 +66,7 @@ def dump(obj,
     """Dump into `fp`. Types encoded."""
     return _json.dump(encode_types(
         obj, type_coder_list, enable_pickle, type_key),
-        default=_default_json(default), **kwargs)
+        fp, default=_default_json(default), **kwargs)
 
 dump.__doc__ = ''.join((dump.__doc__, '\n\nJSON-Doc:\n',
                         _json.dump.__doc__))
@@ -142,7 +142,7 @@ def pack(obj,
     """Returns MessagePack packed data. Types encoded."""
     return _msgpack.pack(
         encode_types(obj, type_coder_list, enable_pickle, type_key),
-        encoding=encoding, use_bin_type=use_bin_type,
+        fp, encoding=encoding, use_bin_type=use_bin_type,
         default=_default_msgpack(default),
         **kwargs)
 

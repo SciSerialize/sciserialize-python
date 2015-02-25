@@ -97,8 +97,11 @@ Check out further data types to be implemented.
 
 import sciserialize.coders as coders
 import sciserialize.serializers as serializers
-from sciserialize.serializers import dumps, loads, packb, unpackb
+from sciserialize.serializers import (dumps, loads, packb, unpackb,
+                                      dump, load, pack, unpack)
 
 
-__all__ = ['dumps', 'loads', 'packb', 'unpackb', 'coders', 'serializers']
+__all__ = ['dumps', 'loads', 'packb', 'unpackb',
+           'dump', 'load', 'pack', 'unpack',
+           'coders', 'serializers']
 __version__ = '0.0dev'

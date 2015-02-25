@@ -116,6 +116,7 @@ class NumpyArrayCoder(TypeCoder):
 class NumpyMaskedArrayCoder(TypeCoder):
     from numpy.ma import masked_array
     from numpy import frombuffer
+    import numpy
     type_ = masked_array
     typestr = 'maskedarray'
     ndarray_coder = NumpyArrayCoder()
@@ -124,11 +125,13 @@ class NumpyMaskedArrayCoder(TypeCoder):
         d = self.ndarray_coder.encode(obj)
         d[TYPE_KEY] = self.typestr
         d['mask_bytes'] = bytearray(obj.mask.data)
+        d['fill_value'] = self.numpy.asscalar(obj.fill_value)
         return d
 
     def decode(self, data):
         mask = self.frombuffer(data['mask_bytes'], dtype=bool)
-        return self.masked_array(self.ndarray_coder.decode(data), mask)
+        return self.masked_array(self.ndarray_coder.decode(data),
+                                 mask, fill_value=data['fill_value'])
 
 
 class DataFrameCoder(TypeCoder):
