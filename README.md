@@ -44,12 +44,18 @@ The encoded output is:
 
 Installation
 ----------------
+Via pip:
 
+`pip install sciserialize`
+
+
+Via setup.py:
 + Clone this repo
 + open console, cd to repo and type `python setup.py develop`
   Now you can work in the repo.
   If this does not work, make shure, python is in your system path.
 
+Requires: Numpy, pandas, msgpack-python, pytho-dateutil
 
 Example
 -------

@@ -105,4 +105,4 @@ __all__ = ['dumps', 'loads', 'packb', 'unpackb',
            'dump', 'load', 'pack', 'unpack',
            'coders', 'serializers']
 
-__version__ = '0.1alpha'
+__version__ = '0.1.1alpha'

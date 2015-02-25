@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(name='SciSerialize',
-      version='0.1alpha',
+      version='0.1.1alpha',
       description='Serialize scientific data to JSON or MessagePack.',
       author='Siegfried Guendert',
       author_email='siegfried.guendert@googlemail.com',
