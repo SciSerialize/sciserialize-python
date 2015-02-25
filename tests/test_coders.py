@@ -80,6 +80,26 @@ class TestDataFrameCoder(TestCoder):
                                          [True, False, True])
 
 
+class TestEncodeDecodeTypes():
+    test_data = {
+        'a': [1, 2, 3, [np.random.randn(10, 2, 3), 'Hello']],
+        'b': {
+            'c': np.ones((3, 4, 5)),
+            'd': np.ma.masked_array(np.random.randn(2), [True, False]),
+            'e': {1, 2, 3, 4, 5, 6, 7},
+            'f': [5, 6, 7, 8, 9, 0],
+          }
+    }
+
+    def test_encode_decode(self):
+        _encoded = coders.encode_types(self.test_data)
+        dec = coders.decode_types(_encoded)
+        assert np.all(dec['a'][:3] == self.test_data['a'][:3])
+        assert np.all(dec['a'][3][0] == self.test_data['a'][3][0])
+        assert np.all(dec['a'][3][-1] == self.test_data['a'][3][-1])
+        for k, v in self.test_data['b'].items():
+            assert np.all(v == dec['b'][k])
+
 if __name__ == '__main__':
     import pytest
 
