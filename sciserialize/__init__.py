@@ -104,4 +104,5 @@ from sciserialize.serializers import (dumps, loads, packb, unpackb,
 __all__ = ['dumps', 'loads', 'packb', 'unpackb',
            'dump', 'load', 'pack', 'unpack',
            'coders', 'serializers']
-__version__ = '0.0dev'
+
+__version__ = '0.1alpha'

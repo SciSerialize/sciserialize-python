@@ -1,14 +1,14 @@
 SciSerialize
 ============
 A format for serializing scientific data.
+Initial python implementation -- in alpha status.
+The Definition of SciSerialize can be found [here](https://github.com/SciSerialize/Definition).
 
-An initial python implementation -- in dev status.
-
-This module implements type encoders and decoders combined with
+This package provides type encoders and decoders combined with
 `msgpack` and `json` to serialize data-types often used in scientific
-computations or engineering. So it can be used to serialize data to
+computations or engineering. It can be used to serialize data to
 MessagePack or JSON files for example.
-All supported types can be serialized and can be deserialized to the
+All supported types can be serialized and can be deserialized back to the
 original types in python.
 If a type is not supported, the option for enabling pickle is given.
 This pickle option is for python internal use only!
@@ -19,6 +19,7 @@ verbose and to be elegant as possible:
 For supporting a custom type, only a class with the attributes
 `type_`, `typestr`, `encode` and `decode` must be implemented and
 an instance can be added to the `TYPE_CODER_LIST`.
+
 Example of a coder to support serialization of propper datetime
 with timezone:
 ```python
@@ -37,9 +38,18 @@ class DateTimeIsoStringCoder(TypeCoder):
 The encoded output is:
 
 ```
-{"~#type": "datetime",
+{"__type__": "datetime",
  "isostr": "2014-12-24T05:55:55.555+00"}
 ```
+
+Installation
+----------------
+
++ Clone this repo
++ open console, cd to repo and type `python setup.py develop`
+  Now you can work in the repo.
+  If this does not work, make shure, python is in your system path.
+
 
 Example
 -------
